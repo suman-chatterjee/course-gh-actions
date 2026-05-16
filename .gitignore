@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# External library repo checked out for CI or local development
+course-gh-actions-extlibrary/
+
+# User files
+*.user
+*.suo
+
