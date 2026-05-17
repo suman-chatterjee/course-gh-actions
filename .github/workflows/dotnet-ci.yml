@@ -41,19 +41,26 @@ jobs:
       - name: Create MSI package (PortalServices only)
         shell: pwsh
         run: |
-          $publishDir = "$PWD\publish\PortalServices"
-          $installerDir = "$PWD\Installer"
+          $repoRoot = "$PWD"
+          $publishDir = "$repoRoot\publish\PortalServices"
+          $installerDir = "$repoRoot\Installer"
+          $msiOutputPath = "$repoRoot\PortalServicesInstaller.msi"
+          
+          Write-Host "Repo root: $repoRoot"
           Write-Host "Publish directory: $publishDir"
           Write-Host "Installer directory: $installerDir"
+          Write-Host "MSI output path: $msiOutputPath"
 
           # Verify publish directory exists
           if (-not (Test-Path -Path $publishDir)) {
             throw "Publish directory not found: $publishDir"
           }
+          Write-Host "Contents of publish directory:"
           Get-ChildItem -Path $publishDir | Write-Host
 
           # Change to installer directory for WiX compilation
           Push-Location $installerDir
+          Write-Host "Changed to directory: $(Get-Location)"
 
           # Harvest the published output into a WiX fragment
           # Using -sw warnings suppression for assembly loading issues (common in CI)
@@ -66,6 +73,7 @@ jobs:
             throw "Harvest file not created"
           }
           Write-Host "Harvest file created successfully"
+          Get-ChildItem -Path "PortalServices.harvest.wxs" | Write-Host
 
           # Compile the WiX sources with diagnostic output
           Write-Host "Compiling PortalServices.wxs..."
@@ -86,17 +94,28 @@ jobs:
           Write-Host "Object files created successfully"
 
           # Link into a single MSI containing only PortalServices files
-          Write-Host "Linking MSI..."
-          & light.exe PortalServices.wixobj PortalServices.harvest.wixobj -o "$PWD\PortalServicesInstaller.msi" -sw1076
-          if ($LASTEXITCODE -ne 0) { throw "light.exe failed with code $LASTEXITCODE" }
+          Write-Host "Linking MSI to: $msiOutputPath"
+          & light.exe PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
+          if ($LASTEXITCODE -ne 0) { 
+            Write-Host "light.exe exit code: $LASTEXITCODE"
+            Get-ChildItem -Path "." | Write-Host
+            throw "light.exe failed with code $LASTEXITCODE" 
+          }
 
           Pop-Location
+          Write-Host "Returned to directory: $(Get-Location)"
 
           # Verify MSI was created
-          if (-not (Test-Path -Path "$PWD\PortalServicesInstaller.msi")) {
-            throw "MSI file not created"
+          Write-Host "Checking for MSI at: $msiOutputPath"
+          if (-not (Test-Path -Path $msiOutputPath)) {
+            Write-Host "MSI not found. Contents of repo root:"
+            Get-ChildItem -Path $repoRoot | Write-Host
+            Write-Host "Contents of Installer directory:"
+            Get-ChildItem -Path $installerDir | Write-Host
+            throw "MSI file not created at $msiOutputPath"
           }
-          Write-Host "MSI created successfully at: $PWD\PortalServicesInstaller.msi"
+          Write-Host "MSI created successfully at: $msiOutputPath"
+          Get-ChildItem -Path $msiOutputPath | Write-Host
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
