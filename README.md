@@ -52,6 +52,14 @@ dotnet restore course-gh-actions.sln
 dotnet build course-gh-actions.sln --configuration Release
 ```
 
+### Publish PortalServices (for MSI packaging)
+
+```bash
+dotnet publish PortalServices --configuration Release --output publish\PortalServices
+```
+
+This step is performed automatically by the CI workflow and produces a standalone publish folder ready for WiX packaging.
+
 ## API Endpoints
 
 - `GET /api/portal/health` - Health check
@@ -125,6 +133,33 @@ If you need custom behavior (registry entries, services, shortcuts, or configura
 - Installer WiX source: `Installer/PortalServices.wxs`
 - External libraries repo (checked out by CI): `course-gh-actions-extlibrary/`
 
-If you want, I can also add an example WiX fragment showing how to add a Start Menu shortcut, or wire the release workflow to automatically create a draft release from the build workflow.
+## Build and Publish Workflow Details
+
+### Why `--no-build` was removed from the Publish step
+
+The CI workflow was initially using `dotnet publish PortalServices --no-build`, which expects pre-built artifacts to already exist in the project's `bin/Release` directory. However, this caused issues because:
+
+1. The `--no-build` flag tells the publish command to skip rebuilding the project and use existing outputs.
+2. It was looking for dependency DLLs (CommonLogging, PortalEngine, PortalContracts) in debug or unexpected locations.
+3. The solution-level build (`dotnet build course-gh-actions.sln`) doesn't always produce outputs in the exact state the publish command expects.
+
+**Fix**: Removed `--no-build` from the publish step so it performs a full rebuild during publish:
+```yaml
+dotnet publish PortalServices --configuration Release --output publish\PortalServices
+```
+
+This ensures:
+- PortalServices and all its dependencies are rebuilt in Release configuration.
+- All transitive dependencies are resolved and compiled correctly.
+- The publish output includes all required DLLs and runtime files.
+
+### External Repository Integration
+
+The `course-gh-actions-extlibrary` repository is checked out into `course-gh-actions-extlibrary/` by the CI workflow. The main projects reference it via project references:
+
+- `PortalEngine` references `../course-gh-actions-extlibrary/Libraries/CommonLogging/CommonLogging.csproj`
+- `PortalServices` references both `PortalEngine` and `CommonLogging`
+
+During the build and publish steps, all project references are resolved and compiled together, ensuring external dependencies are included in the final MSI.
 </content>
 <parameter name="filePath">c:\UserData\Suman\Github\course-gh-actions\README.md

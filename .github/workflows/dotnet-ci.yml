@@ -32,7 +32,7 @@ jobs:
         run: dotnet build course-gh-actions.sln --configuration Release --no-restore
 
       - name: Publish PortalServices
-        run: dotnet publish PortalServices --configuration Release --no-build --output publish\PortalServices
+        run: dotnet publish PortalServices --configuration Release --output publish\PortalServices
 
       - name: Install WiX Toolset
         shell: pwsh
