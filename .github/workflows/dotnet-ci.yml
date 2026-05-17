@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout main repository
@@ -31,16 +31,52 @@ jobs:
       - name: Build solution
         run: dotnet build course-gh-actions.sln --configuration Release --no-restore
 
-      - name: Start PortalServices in background
+      - name: Publish PortalServices
+        run: dotnet publish PortalServices --configuration Release --no-build --output publish\PortalServices
+
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: choco install wixtoolset --no-progress -y
+
+      - name: Create MSI package (PortalServices only)
+        shell: pwsh
         run: |
-          dotnet run --project PortalServices --configuration Release --no-build --urls http://0.0.0.0:5000 &
-          # Wait for the service to be ready
-          for i in {1..15}; do
-            if curl -sSf http://localhost:5000/api/portal/health >/dev/null; then
-              echo "PortalServices is up"; break
-            fi
-            echo "Waiting for PortalServices... ($i)"; sleep 1
-          done
+          $publishDir = "$PWD\publish\PortalServices"
+          $installerDir = "$PWD\Installer"
+          Write-Host "Publish directory: $publishDir"
+          Write-Host "Installer directory: $installerDir"
+
+          # Harvest the published output into a WiX fragment
+          heat.exe dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -out "$installerDir\PortalServices.harvest.wxs"
+
+          # Compile the WiX sources
+          candle.exe -dPublishDir="$publishDir" "$installerDir\PortalServices.wxs"
+          candle.exe -dPublishDir="$publishDir" "$installerDir\PortalServices.harvest.wxs"
+
+          # Link into a single MSI containing only PortalServices files
+          light.exe "$installerDir\PortalServices.wixobj" "$installerDir\PortalServices.harvest.wixobj" -out "$PWD\PortalServicesInstaller.msi"
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortalServicesInstaller
+          path: PortalServicesInstaller.msi
+
+      - name: Start PortalServices for client tests
+        shell: pwsh
+        run: |
+          Start-Process -FilePath dotnet -ArgumentList 'run','--project','PortalServices','--configuration','Release','--no-build','--urls','http://localhost:5000' -NoNewWindow
+          for ($i = 0; $i -lt 15; $i++) {
+            try {
+              $response = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:5000/api/portal/health' -TimeoutSec 5 -ErrorAction Stop
+              if ($response.StatusCode -eq 200) {
+                Write-Host 'PortalServices is up'; break
+              }
+            } catch {
+              Write-Host "Waiting for PortalServices... ($($i + 1))"
+            }
+            Start-Sleep -Seconds 1
+          }
 
       - name: Run PortalClient tests
         env:
