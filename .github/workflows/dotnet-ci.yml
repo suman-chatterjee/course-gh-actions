@@ -46,15 +46,57 @@ jobs:
           Write-Host "Publish directory: $publishDir"
           Write-Host "Installer directory: $installerDir"
 
-          # Harvest the published output into a WiX fragment
-          heat.exe dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -out "$installerDir\PortalServices.harvest.wxs"
+          # Verify publish directory exists
+          if (-not (Test-Path -Path $publishDir)) {
+            throw "Publish directory not found: $publishDir"
+          }
+          Get-ChildItem -Path $publishDir | Write-Host
 
-          # Compile the WiX sources
-          candle.exe -dPublishDir="$publishDir" "$installerDir\PortalServices.wxs"
-          candle.exe -dPublishDir="$publishDir" "$installerDir\PortalServices.harvest.wxs"
+          # Change to installer directory for WiX compilation
+          Push-Location $installerDir
+
+          # Harvest the published output into a WiX fragment
+          # Using -sw warnings suppression for assembly loading issues (common in CI)
+          Write-Host "Running heat.exe..."
+          & heat.exe dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -o PortalServices.harvest.wxs -sw1076
+          if ($LASTEXITCODE -ne 0) { throw "heat.exe failed with code $LASTEXITCODE" }
+
+          # Verify harvest file was created
+          if (-not (Test-Path -Path "PortalServices.harvest.wxs")) {
+            throw "Harvest file not created"
+          }
+          Write-Host "Harvest file created successfully"
+
+          # Compile the WiX sources with diagnostic output
+          Write-Host "Compiling PortalServices.wxs..."
+          & candle.exe -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
+          if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.wxs with code $LASTEXITCODE" }
+
+          Write-Host "Compiling PortalServices.harvest.wxs..."
+          & candle.exe -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
+          if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.harvest.wxs with code $LASTEXITCODE" }
+
+          # Verify object files were created
+          if (-not (Test-Path -Path "PortalServices.wixobj")) {
+            throw "PortalServices.wixobj not created"
+          }
+          if (-not (Test-Path -Path "PortalServices.harvest.wixobj")) {
+            throw "PortalServices.harvest.wixobj not created"
+          }
+          Write-Host "Object files created successfully"
 
           # Link into a single MSI containing only PortalServices files
-          light.exe "$installerDir\PortalServices.wixobj" "$installerDir\PortalServices.harvest.wixobj" -out "$PWD\PortalServicesInstaller.msi"
+          Write-Host "Linking MSI..."
+          & light.exe PortalServices.wixobj PortalServices.harvest.wixobj -o "$PWD\PortalServicesInstaller.msi" -sw1076
+          if ($LASTEXITCODE -ne 0) { throw "light.exe failed with code $LASTEXITCODE" }
+
+          Pop-Location
+
+          # Verify MSI was created
+          if (-not (Test-Path -Path "$PWD\PortalServicesInstaller.msi")) {
+            throw "MSI file not created"
+          }
+          Write-Host "MSI created successfully at: $PWD\PortalServicesInstaller.msi"
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4

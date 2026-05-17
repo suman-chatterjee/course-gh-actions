@@ -153,6 +153,25 @@ This ensures:
 - All transitive dependencies are resolved and compiled correctly.
 - The publish output includes all required DLLs and runtime files.
 
+### MSI Packaging with WiX Toolset
+
+The CI workflow creates a Windows Installer (MSI) using the WiX Toolset. The process includes three main steps:
+
+1. **Harvest** — `heat.exe` scans the published PortalServices folder and generates a WiX component group (`PortalServices.harvest.wxs`) with file references.
+   - Uses `-sw1076` flag to suppress harmless assembly loading warnings (common in CI environments where dependencies may not be fully resolvable).
+
+2. **Compile** — `candle.exe` compiles the WiX source files (`.wxs`) into object files (`.wixobj`).
+   - Includes proper error checking to fail fast if compilation fails.
+
+3. **Link** — `light.exe` links the object files into a single MSI package.
+   - Also uses `-sw1076` to suppress assembly loading warnings.
+
+**Key improvements in the workflow:**
+- Error checking after each WiX command (`if ($LASTEXITCODE -ne 0)`)
+- Working directory management to avoid path issues
+- Verification that intermediate files are created successfully
+- Diagnostic output to help troubleshoot failures
+
 ### External Repository Integration
 
 The `course-gh-actions-extlibrary` repository is checked out into `course-gh-actions-extlibrary/` by the CI workflow. The main projects reference it via project references:
