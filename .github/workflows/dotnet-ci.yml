@@ -1,12 +1,7 @@
 name: .NET CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,7 +16,7 @@ jobs:
       - name: Checkout external library repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/course-gh-actions-extlibrary
+          repository: suman-chatterjee/course-gh-actions-extlibrary
           path: course-gh-actions-extlibrary
           fetch-depth: 0
 
