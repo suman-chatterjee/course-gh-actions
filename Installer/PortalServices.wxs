@@ -14,7 +14,6 @@
 
     <Feature Id="ProductFeature" Title="PortalServices" Level="1">
       <ComponentGroupRef Id="PortalServicesComponents" />
-      <ComponentGroupRef Id="ServiceComponentGroup" />
     </Feature>
 
     <!-- Install/Start Service -->
@@ -22,40 +21,4 @@
       <ScheduleReboot After="InstallFinalize" />
     </InstallExecuteSequence>
   </Product>
-
-  <!-- Fragment for Service Component -->
-  <Fragment>
-    <ComponentGroup Id="ServiceComponentGroup">
-      <Component Id="PortalServicesServiceComponent" Directory="INSTALLFOLDER" Guid="*">
-        <!-- Service Installation -->
-        <File Id="PortalServicesExe" Source="$(var.PublishDir)\PortalServices.exe" KeyPath="yes" />
-        
-        <!-- Register Windows Service -->
-        <ServiceInstall Id="ServiceInstaller"
-                        Type="ownProcess"
-                        Name="PortalServices"
-                        DisplayName="Portal Services"
-                        Description="ASP.NET Core Portal Services Application"
-                        Start="auto"
-                        Account="LocalSystem"
-                        ErrorControl="normal" />
-
-        <!-- Configure service failure recovery -->
-        <util:ServiceConfig
-                            ServiceName="PortalServices"
-                            FirstFailureActionType="restart"
-                            SecondFailureActionType="restart"
-                            ThirdFailureActionType="none"
-                            RestartServiceDelayInSeconds="60" />
-        
-        <!-- Control Service (Start on install, Stop on uninstall) -->
-        <ServiceControl Id="ServiceControl"
-                        Name="PortalServices"
-                        Start="install"
-                        Stop="both"
-                        Remove="uninstall"
-                        Wait="yes" />
-      </Component>
-    </ComponentGroup>
-  </Fragment>
 </Wix>
