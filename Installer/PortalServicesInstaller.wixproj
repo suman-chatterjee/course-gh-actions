@@ -8,12 +8,12 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>PortalServicesInstaller</OutputName>
     <OutputType>Package</OutputType>
-    <WixToolsetInstalled Condition="Exists('$(WixTargetsPath)')">true</WixToolsetInstalled>
-    <WixToolsetInstalled Condition="'$(WixToolsetInstalled)' == ''">false</WixToolsetInstalled>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixToolsetInstalled Condition="Exists('$(WixTargetsPath)')">true</WixToolsetInstalled>
+    <WixToolsetInstalled Condition="'$(WixToolsetInstalled)' == ''">false</WixToolsetInstalled>
     <!-- Skip build if WiX is not installed (e.g., in CI/CD environments) -->
-    <SkipBuild Condition="!$(WixToolsetInstalled)">true</SkipBuild>
+    <SkipBuild Condition="'$(WixToolsetInstalled)' != 'true'">true</SkipBuild>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
