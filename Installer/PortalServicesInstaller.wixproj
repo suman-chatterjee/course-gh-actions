@@ -8,23 +8,31 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>PortalServicesInstaller</OutputName>
     <OutputType>Package</OutputType>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixToolsetInstalled Condition="Exists('$(WixTargetsPath)')">true</WixToolsetInstalled>
+    <WixToolsetInstalled Condition="'$(WixToolsetInstalled)' == ''">false</WixToolsetInstalled>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <!-- Skip build if WiX is not installed (e.g., in CI/CD environments) -->
+    <SkipBuild Condition="!$(WixToolsetInstalled)">true</SkipBuild>
   </PropertyGroup>
+  
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\Debug\</OutputPath>
     <IntermediateOutputPath>obj\Debug\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
   </PropertyGroup>
+  
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\Release\</OutputPath>
     <IntermediateOutputPath>obj\Release\</IntermediateOutputPath>
   </PropertyGroup>
-  <ItemGroup>
+  
+  <ItemGroup Condition="$(WixToolsetInstalled)">
     <Compile Include="PortalServices.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
-  <ItemGroup>
+  
+  <ItemGroup Condition="$(WixToolsetInstalled)">
     <WixExtension Include="WixUIExtension">
       <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
       <Name>WixUIExtension</Name>
@@ -34,6 +42,7 @@
       <Name>WixUtilExtension</Name>
     </WixExtension>
   </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\PortalServices\PortalServices.csproj">
       <Name>PortalServices</Name>
@@ -44,5 +53,11 @@
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(WixTargetsPath)" />
+  
+  <Import Project="$(WixTargetsPath)" Condition="$(WixToolsetInstalled)" />
+  
+  <!-- Provide a message when WiX is not installed -->
+  <Target Name="WarnWixNotInstalled" BeforeTargets="Build" Condition="!$(WixToolsetInstalled)">
+    <Message Text="WiX Toolset is not installed. Skipping installer build. Install WiX from https://wixtoolset.org/ to build the installer locally." Importance="high" />
+  </Target>
 </Project>
