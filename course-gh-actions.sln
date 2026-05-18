@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLogging", "CommonLogg
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortalClient", "PortalClient\PortalClient.csproj", "{7A79D9AE-26EB-45A8-AB09-CB308EE8F9F8}"
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PortalServicesInstaller", "Installer\PortalServicesInstaller.wixproj", "{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,8 +71,23 @@ Global
 		{7A79D9AE-26EB-45A8-AB09-CB308EE8F9F8}.Release|x64.Build.0 = Release|Any CPU
 		{7A79D9AE-26EB-45A8-AB09-CB308EE8F9F8}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A79D9AE-26EB-45A8-AB09-CB308EE8F9F8}.Release|x86.Build.0 = Release|Any CPU
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|Any CPU.Build.0 = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|x64.ActiveCfg = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|x64.Build.0 = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|x86.ActiveCfg = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Debug|x86.Build.0 = Debug|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|Any CPU.ActiveCfg = Release|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|Any CPU.Build.0 = Release|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|x64.ActiveCfg = Release|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|x64.Build.0 = Release|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|x86.ActiveCfg = Release|x86
+		{D3B5D89F-8BB9-4EAB-8A87-5B8F0C5D5E5A}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4A60F8A5-2C86-4AB8-95C8-1D7C8C1F03C5}
 	EndGlobalSection
 EndGlobal

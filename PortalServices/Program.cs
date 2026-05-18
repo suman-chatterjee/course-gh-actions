@@ -4,6 +4,12 @@ using PortalEngine;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure for Windows Service
+if (args.Contains("--windows-service"))
+{
+    builder.Host.UseWindowsService();
+}
+
 builder.Logging.ClearProviders();
 builder.Logging.AddPortalLogging();
 
