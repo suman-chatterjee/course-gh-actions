@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PortalContracts\PortalContracts.csproj" />
+    <ProjectReference Include="..\course-gh-actions-extlibrary\Libraries\PortalContracts\PortalContracts.csproj" />
     <ProjectReference Include="..\PortalEngine\PortalEngine.csproj" />
     <ProjectReference Include="..\CommonLogging\CommonLogging.csproj" />
   </ItemGroup>

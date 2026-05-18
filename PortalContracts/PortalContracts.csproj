@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\course-gh-actions-extlibrary\Libraries\PortalContracts\**\*.cs" Link="External\%(RecursiveDir)%(Filename)%(Extension)" />
+    <ProjectReference Include="..\course-gh-actions-extlibrary\Libraries\PortalContracts\PortalContracts.csproj" />
   </ItemGroup>
 
 </Project>

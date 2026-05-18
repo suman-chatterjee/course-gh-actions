@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PortalContracts\PortalContracts.csproj" />
+    <ProjectReference Include="..\course-gh-actions-extlibrary\Libraries\PortalContracts\PortalContracts.csproj" />
   </ItemGroup>
 
 </Project>
