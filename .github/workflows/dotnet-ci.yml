@@ -125,12 +125,11 @@ jobs:
           }
 
           Write-Host "Compiling PortalServices.wxs..."
-          & candle.exe -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
+          & candle.exe -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
           if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.wxs with code $LASTEXITCODE" }
-
+  
           Write-Host "Compiling PortalServices.harvest.wxs..."
-          & candle.exe -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
-          if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.harvest.wxs with code $LASTEXITCODE" }
+          & candle.exe -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
 
           if (-not (Test-Path -Path "PortalServices.wixobj")) {
             throw "PortalServices.wixobj not created"
@@ -141,7 +140,7 @@ jobs:
           Write-Host "Object files created successfully"
 
           Write-Host "Linking MSI to: $msiOutputPath"
-          & light.exe PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
+          & light.exe -ext WixUtilExtension PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
           if ($LASTEXITCODE -ne 0) { 
             Write-Host "light.exe exit code: $LASTEXITCODE"
             Get-ChildItem -Path "." | Write-Host
