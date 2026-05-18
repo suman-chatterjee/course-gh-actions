@@ -10,6 +10,9 @@
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets') ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(ProgramFiles(x86))\WiX Toolset v3.11\Microsoft WiX\v3.x\Wix.targets') ">$(ProgramFiles(x86))\WiX Toolset v3.11\Microsoft WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(ProgramFiles)\WiX Toolset v3.11\Microsoft WiX\v3.x\Wix.targets') ">$(ProgramFiles)\WiX Toolset v3.11\Microsoft WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND Exists('$(ProgramFiles)\WiX Toolset v3.11\bin\Wix.targets') ">$(ProgramFiles)\WiX Toolset v3.11\bin\Wix.targets</WixTargetsPath>
     <WixToolsetInstalled Condition="Exists('$(WixTargetsPath)')">true</WixToolsetInstalled>
     <WixToolsetInstalled Condition="'$(WixToolsetInstalled)' == ''">false</WixToolsetInstalled>
     <!-- Skip build if WiX is not installed (e.g., in CI/CD environments) -->
@@ -54,10 +57,14 @@
     </ProjectReference>
   </ItemGroup>
   
-  <Import Project="$(WixTargetsPath)" Condition="$(WixToolsetInstalled)" />
+  <Import Project="$(WixTargetsPath)" Condition="Exists('$(WixTargetsPath)')" />
   
   <!-- Provide a message when WiX is not installed -->
-  <Target Name="WarnWixNotInstalled" BeforeTargets="Build" Condition="!$(WixToolsetInstalled)">
-    <Message Text="WiX Toolset is not installed. Skipping installer build. Install WiX from https://wixtoolset.org/ to build the installer locally." Importance="high" />
+  <Target Name="WarnWixNotInstalled" BeforeTargets="Build" Condition="'$(WixToolsetInstalled)' != 'true'">
+    <Message Text="WiX Toolset is not installed or Wix.targets cannot be found. Skipping installer build. Install WiX from https://wixtoolset.org/ to build the installer locally." Importance="high" />
+  </Target>
+
+  <Target Name="Build" Condition="'$(WixToolsetInstalled)' != 'true'">
+    <Message Text="Skipping Wix installer project build because WiX Toolset is not available." Importance="high" />
   </Target>
 </Project>
