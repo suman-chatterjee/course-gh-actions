@@ -6,13 +6,6 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate />
 
-    <!-- Service Configuration -->
-    <util:ServiceConfig ServiceName="PortalServices" 
-                        FirstFailureActionType="restart" 
-                        SecondFailureActionType="restart" 
-                        ThirdFailureActionType="none"
-                        RestartServiceDelayInSeconds="60" />
-
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="PortalServices" />
@@ -38,22 +31,30 @@
         <File Id="PortalServicesExe" Source="$(var.PublishDir)\PortalServices.exe" KeyPath="yes" />
         
         <!-- Register Windows Service -->
-        <util:ServiceInstall Id="ServiceInstaller"
-                            Type="ownProcess"
-                            Name="PortalServices"
-                            DisplayName="Portal Services"
-                            Description="ASP.NET Core Portal Services Application"
-                            Start="auto"
-                            Account="LocalSystem"
-                            ErrorControl="normal" />
+        <ServiceInstall Id="ServiceInstaller"
+                        Type="ownProcess"
+                        Name="PortalServices"
+                        DisplayName="Portal Services"
+                        Description="ASP.NET Core Portal Services Application"
+                        Start="auto"
+                        Account="LocalSystem"
+                        ErrorControl="normal" />
+
+        <!-- Configure service failure recovery -->
+        <util:ServiceConfig Id="ServiceConfig"
+                            ServiceName="PortalServices"
+                            FirstFailureActionType="restart"
+                            SecondFailureActionType="restart"
+                            ThirdFailureActionType="none"
+                            RestartServiceDelayInSeconds="60" />
         
         <!-- Control Service (Start on install, Stop on uninstall) -->
-        <util:ServiceControl Id="ServiceControl"
-                            Name="PortalServices"
-                            Start="install"
-                            Stop="both"
-                            Remove="uninstall"
-                            Wait="yes" />
+        <ServiceControl Id="ServiceControl"
+                        Name="PortalServices"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>
