@@ -41,7 +41,7 @@
                         ErrorControl="normal" />
 
         <!-- Configure service failure recovery -->
-        <util:ServiceConfig Id="ServiceConfig"
+        <util:ServiceConfig
                             ServiceName="PortalServices"
                             FirstFailureActionType="restart"
                             SecondFailureActionType="restart"
