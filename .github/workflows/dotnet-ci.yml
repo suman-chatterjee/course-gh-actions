@@ -117,11 +117,38 @@ jobs:
           Write-Host "MSI created successfully at: $msiOutputPath"
           Get-ChildItem -Path $msiOutputPath | Write-Host
 
-      - name: Upload MSI artifact
+      - name: Collect installer outputs (MSI + any CABs)
+        shell: pwsh
+        run: |
+          $artifactDir = Join-Path $PWD "installer-artifacts"
+          if (Test-Path $artifactDir) { Remove-Item -Recurse -Force $artifactDir }
+          New-Item -ItemType Directory -Path $artifactDir | Out-Null
+
+          $msiPath = Join-Path $PWD "PortalServicesInstaller.msi"
+          if (Test-Path $msiPath) {
+            Copy-Item -Path $msiPath -Destination $artifactDir
+          } else {
+            throw "Expected MSI not found at $msiPath"
+          }
+
+          $cabFiles = Get-ChildItem -Path $PWD -Filter *.cab -Recurse -ErrorAction SilentlyContinue
+          if ($cabFiles) {
+            foreach ($c in $cabFiles) {
+              Copy-Item -Path $c.FullName -Destination $artifactDir
+            }
+          }
+
+          Write-Host "Collected artifacts:"
+          Get-ChildItem -Path $artifactDir | Write-Host
+
+          # expose path for upload step
+          Add-Content -Path $Env:GITHUB_ENV -Value "INSTALLER_ARTIFACTS_DIR=$artifactDir"
+
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: PortalServicesInstaller
-          path: PortalServicesInstaller.msi
+          path: ${{ env.INSTALLER_ARTIFACTS_DIR }}
 
       - name: Start PortalServices for client tests
         shell: pwsh
