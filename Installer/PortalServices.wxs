@@ -35,7 +35,7 @@
     <ComponentGroup Id="ServiceComponentGroup">
       <Component Id="PortalServicesServiceComponent" Directory="INSTALLFOLDER" Guid="*">
         <!-- Service Installation -->
-        <File Id="PortalServicesExe" Source="$(var.PortalServices.TargetDir)PortalServices.exe" KeyPath="yes" />
+        <File Id="PortalServicesExe" Source="$(var.PublishDir)\PortalServices.exe" KeyPath="yes" />
         
         <!-- Register Windows Service -->
         <util:ServiceInstall Id="ServiceInstaller"
