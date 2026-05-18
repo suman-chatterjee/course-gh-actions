@@ -60,8 +60,23 @@ jobs:
           Push-Location $installerDir
           Write-Host "Changed to directory: $(Get-Location)"
 
+          $heatPath = (Get-Command heat.exe -ErrorAction Stop).Source
+          $candlePath = (Get-Command candle.exe -ErrorAction Stop).Source
+          $lightPath = (Get-Command light.exe -ErrorAction Stop).Source
+          $wixBinPath = Split-Path $heatPath
+          $wixUtilExtensionPath = Join-Path $wixBinPath "WixUtilExtension.dll"
+
+          Write-Host "heat.exe path: $heatPath"
+          Write-Host "candle.exe path: $candlePath"
+          Write-Host "light.exe path: $lightPath"
+          Write-Host "WixUtilExtension.dll path: $wixUtilExtensionPath"
+
+          if (-not (Test-Path -Path $wixUtilExtensionPath)) {
+            throw "WixUtilExtension.dll not found at $wixUtilExtensionPath"
+          }
+
           Write-Host "Running heat.exe..."
-          & heat.exe dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -o PortalServices.harvest.wxs -sw1076
+          & $heatPath dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -o PortalServices.harvest.wxs -sw1076
           if ($LASTEXITCODE -ne 0) { throw "heat.exe failed with code $LASTEXITCODE" }
 
           if (-not (Test-Path -Path "PortalServices.harvest.wxs")) {
@@ -125,11 +140,11 @@ jobs:
           }
 
           Write-Host "Compiling PortalServices.wxs..."
-          & candle.exe -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
+          & $candlePath -ext "$wixUtilExtensionPath" -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
           if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.wxs with code $LASTEXITCODE" }
   
           Write-Host "Compiling PortalServices.harvest.wxs..."
-          & candle.exe -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
+          & $candlePath -ext "$wixUtilExtensionPath" -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
 
           if (-not (Test-Path -Path "PortalServices.wixobj")) {
             throw "PortalServices.wixobj not created"
@@ -140,7 +155,7 @@ jobs:
           Write-Host "Object files created successfully"
 
           Write-Host "Linking MSI to: $msiOutputPath"
-          & light.exe -ext WixUtilExtension PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
+          & $lightPath -ext "$wixUtilExtensionPath" PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
           if ($LASTEXITCODE -ne 0) { 
             Write-Host "light.exe exit code: $LASTEXITCODE"
             Get-ChildItem -Path "." | Write-Host
