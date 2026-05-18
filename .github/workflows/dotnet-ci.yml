@@ -51,31 +51,79 @@ jobs:
           Write-Host "Installer directory: $installerDir"
           Write-Host "MSI output path: $msiOutputPath"
 
-          # Verify publish directory exists
           if (-not (Test-Path -Path $publishDir)) {
             throw "Publish directory not found: $publishDir"
           }
           Write-Host "Contents of publish directory:"
           Get-ChildItem -Path $publishDir | Write-Host
 
-          # Change to installer directory for WiX compilation
           Push-Location $installerDir
           Write-Host "Changed to directory: $(Get-Location)"
 
-          # Harvest the published output into a WiX fragment
-          # Using -sw warnings suppression for assembly loading issues (common in CI)
           Write-Host "Running heat.exe..."
           & heat.exe dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -o PortalServices.harvest.wxs -sw1076
           if ($LASTEXITCODE -ne 0) { throw "heat.exe failed with code $LASTEXITCODE" }
 
-          # Verify harvest file was created
           if (-not (Test-Path -Path "PortalServices.harvest.wxs")) {
             throw "Harvest file not created"
           }
           Write-Host "Harvest file created successfully"
           Get-ChildItem -Path "PortalServices.harvest.wxs" | Write-Host
 
-          # Compile the WiX sources with diagnostic output
+          # Patch the harvested .wxs to add ServiceInstall/ServiceControl for PortalServices.exe
+          Write-Host "Patching PortalServices.harvest.wxs to register the Windows Service..."
+          try {
+            [xml]$xml = Get-Content -Path "PortalServices.harvest.wxs"
+            $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+            $ns.AddNamespace("w", "http://schemas.microsoft.com/wix/2006/wi")
+
+            $componentNode = $xml.SelectSingleNode("//w:Component[w:File[contains(@Source,'PortalServices.exe')]]", $ns)
+            if (-not $componentNode) {
+              Write-Host "Warning: Could not find a component with PortalServices.exe. The harvest may have generated a different filename."
+              # Optionally fail here if you want to enforce presence:
+              # throw "Could not find component containing PortalServices.exe in harvest file."
+            } else {
+              # Only add ServiceInstall if not already present
+              $existingSI = $componentNode.SelectSingleNode("w:ServiceInstall", $ns)
+              if (-not $existingSI) {
+                $serviceInstall = $xml.CreateElement("ServiceInstall", $xml.DocumentElement.NamespaceURI)
+                $serviceInstall.SetAttribute("Id","PortalServiceInstall")
+                $serviceInstall.SetAttribute("Type","ownProcess")
+                $serviceInstall.SetAttribute("Name","PortalServices")
+                $serviceInstall.SetAttribute("DisplayName","Portal Services")
+                $serviceInstall.SetAttribute("Description","Portal Services host")
+                $serviceInstall.SetAttribute("Start","auto")
+                $serviceInstall.SetAttribute("ErrorControl","normal")
+                $serviceInstall.SetAttribute("Vital","yes")
+                $componentNode.AppendChild($serviceInstall) | Out-Null
+                Write-Host "Added ServiceInstall element."
+              } else {
+                Write-Host "ServiceInstall already present in component."
+              }
+
+              $existingSC = $componentNode.SelectSingleNode("w:ServiceControl", $ns)
+              if (-not $existingSC) {
+                $serviceControl = $xml.CreateElement("ServiceControl", $xml.DocumentElement.NamespaceURI)
+                $serviceControl.SetAttribute("Id","PortalServiceControl")
+                $serviceControl.SetAttribute("Name","PortalServices")
+                $serviceControl.SetAttribute("Start","install")
+                $serviceControl.SetAttribute("Stop","both")
+                $serviceControl.SetAttribute("Remove","uninstall")
+                $serviceControl.SetAttribute("Wait","yes")
+                $componentNode.AppendChild($serviceControl) | Out-Null
+                Write-Host "Added ServiceControl element."
+              } else {
+                Write-Host "ServiceControl already present in component."
+              }
+
+              $xml.Save("PortalServices.harvest.wxs")
+              Write-Host "Harvest file patched successfully."
+            }
+          } catch {
+            Write-Host "Error patching harvest file: $($_.Exception.Message)"
+            throw
+          }
+
           Write-Host "Compiling PortalServices.wxs..."
           & candle.exe -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
           if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.wxs with code $LASTEXITCODE" }
@@ -84,7 +132,6 @@ jobs:
           & candle.exe -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
           if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.harvest.wxs with code $LASTEXITCODE" }
 
-          # Verify object files were created
           if (-not (Test-Path -Path "PortalServices.wixobj")) {
             throw "PortalServices.wixobj not created"
           }
@@ -93,7 +140,6 @@ jobs:
           }
           Write-Host "Object files created successfully"
 
-          # Link into a single MSI containing only PortalServices files
           Write-Host "Linking MSI to: $msiOutputPath"
           & light.exe PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
           if ($LASTEXITCODE -ne 0) { 
@@ -105,7 +151,6 @@ jobs:
           Pop-Location
           Write-Host "Returned to directory: $(Get-Location)"
 
-          # Verify MSI was created
           Write-Host "Checking for MSI at: $msiOutputPath"
           if (-not (Test-Path -Path $msiOutputPath)) {
             Write-Host "MSI not found. Contents of repo root:"
@@ -141,7 +186,6 @@ jobs:
           Write-Host "Collected artifacts:"
           Get-ChildItem -Path $artifactDir | Write-Host
 
-          # expose path for upload step
           Add-Content -Path $Env:GITHUB_ENV -Value "INSTALLER_ARTIFACTS_DIR=$artifactDir"
 
       - name: Upload installer artifact
