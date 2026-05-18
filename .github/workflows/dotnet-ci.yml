@@ -75,6 +75,10 @@ jobs:
             throw "WixUtilExtension.dll not found at $wixUtilExtensionPath"
           }
 
+          # Add WiX bin directory to PATH so extensions can be located by name
+          $env:Path = "$wixBinPath;$env:Path"
+          Write-Host "Updated PATH to include WiX bin: $wixBinPath"
+
           Write-Host "Running heat.exe..."
           & $heatPath dir $publishDir -ag -srd -dr INSTALLFOLDER -cg PortalServicesComponents -var var.PublishDir -o PortalServices.harvest.wxs -sw1076
           if ($LASTEXITCODE -ne 0) { throw "heat.exe failed with code $LASTEXITCODE" }
@@ -140,11 +144,11 @@ jobs:
           }
 
           Write-Host "Compiling PortalServices.wxs..."
-          & $candlePath -ext "$wixUtilExtensionPath" -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
+          & $candlePath -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.wxs -o PortalServices.wixobj
           if ($LASTEXITCODE -ne 0) { throw "candle.exe failed on PortalServices.wxs with code $LASTEXITCODE" }
   
           Write-Host "Compiling PortalServices.harvest.wxs..."
-          & $candlePath -ext "$wixUtilExtensionPath" -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
+          & $candlePath -ext WixUtilExtension -dPublishDir="$publishDir" PortalServices.harvest.wxs -o PortalServices.harvest.wixobj
 
           if (-not (Test-Path -Path "PortalServices.wixobj")) {
             throw "PortalServices.wixobj not created"
@@ -155,7 +159,7 @@ jobs:
           Write-Host "Object files created successfully"
 
           Write-Host "Linking MSI to: $msiOutputPath"
-          & $lightPath -ext "$wixUtilExtensionPath" PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
+          & $lightPath -ext WixUtilExtension PortalServices.wixobj PortalServices.harvest.wixobj -o "$msiOutputPath" -sw1076
           if ($LASTEXITCODE -ne 0) { 
             Write-Host "light.exe exit code: $LASTEXITCODE"
             Get-ChildItem -Path "." | Write-Host
